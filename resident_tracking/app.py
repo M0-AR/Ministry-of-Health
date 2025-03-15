@@ -8,23 +8,82 @@ st.set_page_config(
     page_title="نظام متابعة الأطباء المقيمين",
     page_icon="👨‍⚕️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"  # Changed to auto for better mobile experience
 )
 
-# Add custom CSS for RTL support and styling
+# Add custom CSS for RTL support and mobile responsiveness
 st.markdown("""
 <style>
+    /* RTL Support */
     body {
         direction: rtl;
     }
-    .stButton button {
-        width: 100%;
+    
+    /* Mobile Responsiveness */
+    @media (max-width: 640px) {
+        /* Adjust column widths on mobile */
+        div[data-testid="column"] {
+            width: 100% !important;
+            margin-bottom: 1rem;
+        }
+        
+        /* Make cards full width on mobile */
+        div[data-testid="stExpander"] {
+            width: 100% !important;
+        }
+        
+        /* Improve button visibility on mobile */
+        .stButton button {
+            width: 100%;
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        /* Better text input on mobile */
+        .stTextInput input {
+            font-size: 16px !important; /* Prevents zoom on iOS */
+            padding: 0.5rem;
+        }
+        
+        /* Improve select boxes on mobile */
+        .stSelectbox div[data-baseweb="select"] {
+            font-size: 16px !important;
+        }
+        
+        /* Better spacing for metrics on mobile */
+        div[data-testid="metric-container"] {
+            padding: 0.5rem 0;
+        }
     }
+    
+    /* General Improvements */
     .stSelectbox div[data-baseweb="select"] > div {
         text-align: right;
     }
     .stTextInput input {
         text-align: right;
+    }
+    
+    /* Better card styling */
+    div[data-testid="stExpander"] {
+        border: 1px solid #e6e6e6;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    /* Improve chart responsiveness */
+    .js-plotly-plot {
+        width: 100% !important;
+    }
+    
+    /* Better metric visibility */
+    div[data-testid="metric-container"] {
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -139,35 +198,40 @@ def main():
     # Sidebar with hospital info and quick filters
     with st.sidebar:
         st.title("🏥 معلومات المشافي")
+        # Make select box more mobile-friendly with a shorter list
         selected_hospital_info = st.selectbox(
             "اختر مشفى لعرض معلوماته",
-            hospitals_df['Name'].tolist()
+            hospitals_df['Name'].tolist(),
+            key="hospital_selector"
         )
         
         hospital_info = hospitals_df[hospitals_df['Name'] == selected_hospital_info].iloc[0]
-        st.markdown(f"""
-        ### {hospital_info['Name']}
         
-        **النوع:** {hospital_info['Type']}  
-        **الموقع:** {hospital_info['Location']}  
-        **عدد الأسرة:** {hospital_info['Beds']}  
-        
-        **الأقسام:**  
-        {hospital_info['Departments']}
-        """)
+        # Use expander for hospital details on mobile
+        with st.expander("تفاصيل المشفى", expanded=True):
+            st.markdown(f"""
+            ### {hospital_info['Name']}
+            
+            **النوع:** {hospital_info['Type']}  
+            **الموقع:** {hospital_info['Location']}  
+            **عدد الأسرة:** {hospital_info['Beds']}  
+            
+            **الأقسام:**  
+            {hospital_info['Departments']}
+            """)
         
         st.divider()
         
-        # Quick filters
-        st.subheader("⚡ تصفية سريعة")
-        hospital_type = st.radio(
-            "نوع المشفى",
-            ["الكل", "حكومي", "جامعي", "تخصصي", "خاص"]
-        )
-        
-        if hospital_type != "الكل":
-            filtered_hospitals = hospitals_df[hospitals_df['Type'] == hospital_type]['Name'].tolist()
-            df = df[df['Hospital'].isin(filtered_hospitals)]
+        # Quick filters in an expander for mobile
+        with st.expander("⚡ تصفية سريعة", expanded=True):
+            hospital_type = st.radio(
+                "نوع المشفى",
+                ["الكل", "حكومي", "جامعي", "تخصصي", "خاص"]
+            )
+            
+            if hospital_type != "الكل":
+                filtered_hospitals = hospitals_df[hospitals_df['Type'] == hospital_type]['Name'].tolist()
+                df = df[df['Hospital'].isin(filtered_hospitals)]
     
     # Main content area with tabs
     tab1, tab2, tab3 = st.tabs(["📋 القائمة الرئيسية", "🔄 سجل النقل", "📊 التقارير"])
